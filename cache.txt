@@ -1,0 +1,96 @@
+
+caching: cok sık kullanılan dataların kaydedilmesi
+
+Cache ikiye ayrılır
+1. In-memory cache. private cache
+2. Distrubuted cache. shared cache
+
+In-Memory Cache
+-----------------------------
+Ramde yani memoryde datalar kaydedilir, tutulur. dezavantajı farklı instancelarda memory cache farklı olur. bu yüzden distrubuted cache gerekir eğer farklı instancelara alıcaksan.  bir sunucuda uygulamayı ayağa kaldırıyorsak in-memory cache sorun değil.
+
+
+Distrubuted Cache
+--------------------------------
+uygulamanın instance ının alındığı ayağa kalktığı hosttaki ramde değil ayrı bir yerde cachelerin tutulması. veri tutarsızlığının önüne geçilmiş olur. Redis distrubuted cache servislerinden birisidir. 2. bir avantaj in memory cache'de uygulama restart olduğunda cache silinir. fakat distrubutedda başka serviste saklandığı için silinme durumu yaşanmaz. cache'deki data kaybolmaz.
+
+2 dezavantajı vardır. Bunlardan biri hızdır. In-memorycachedeki dataya cok daah hızlı erişilebilirken distrubutec cachede daha yavaştır cunku servise istek yapmak gerekiyor. fakat bu hız farkı gözle görülebilir seviyede değildir.  2. dezavantajı ise inmemory i implememte etmek cok daha kolaydır. Veri tutarlılığı hızdan daha önemlidir bu sebeple distrubuted cache problemlerimizi çözer.  Redis bir shared cache servistir.
+
+
+performans olarak yarar sağlar.
+Cok sık değişmeyen veriler vardır. Bu verileri önbelleğe alarak performans kazanmış oluruz.
+IMemoryCache, Web sunucusunun belleğinde depolanan bir önbelleği temsil eder.
+IMemoryCache'in metodları;
+- CreateEntry  Önbellekte bir alan oluşturarak içerisine değer atamamızı sağlar.
+- Remove       Önbellekte var olan alanı kaldırır.
+- TryGetValue  Memory Cache'de belirtilen alanda varsa değeri getirir.
+
+https://www.youtube.com/watch?v=FdD5XVEUB8Q&list=LL&index=1
+
+ASP.NET Core’da MemoryCache, verileri bellekte (RAM’de) saklayarak uygulamanın daha hızlı çalışmasını sağlayan bir in-memory caching mekanizmasıdır.
+MemoryCache Nedir?
+Bellek tabanlı (in-memory) bir veri saklama yöntemidir.
+ASP.NET Core’da IMemoryCache veya MemoryCache sınıfı üzerinden kullanılır.
+Genelde kısa süreli, sık erişilen veriler için uygundur.
+Uygulama kapandığında veya sunucu resetlendiğinde veriler silinir.
+
+Neden Kullanılır?
+Performans Artışı
+
+Örneğin, her sayfa isteğinde veritabanından aynı kategoriler listesini çekmek yerine bellekte tutmak sorgu maliyetini düşürür.
+
+Gereksiz Tekrar Sorguların Önlenmesi
+
+API, veritabanı veya başka bir kaynak sürekli çağrılmak zorunda kalmaz.
+
+Düşük Gecikme (Low Latency)
+
+Bellekten veri çekmek milisaniyeler sürer, veritabanı veya API çağrısına göre çok daha hızlıdır.
+
+Kaynak Tüketimini Azaltma
+
+Daha az CPU ve I/O kullanımı sağlar.
+
+
+
+
+using Microsoft.Extensions.Caching.Memory;
+
+public class ProductService
+{
+    private readonly IMemoryCache _memoryCache;
+
+    public ProductService(IMemoryCache memoryCache)
+    {
+        _memoryCache = memoryCache;
+    }
+
+    public List<string> GetCategories()
+    {
+        // Cache anahtarı
+        string cacheKey = "categories";
+
+        // Eğer cache'te varsa direkt oku
+        if (_memoryCache.TryGetValue(cacheKey, out List<string> categories))
+        {
+            return categories;
+        }
+
+        // Yoksa veritabanından çek
+        categories = GetCategoriesFromDb();
+
+        // Cache’e ekle (5 dakika geçerli olsun)
+        _memoryCache.Set(cacheKey, categories, TimeSpan.FromMinutes(5));
+
+        return categories;
+    }
+
+    private List<string> GetCategoriesFromDb()
+    {
+        return new List<string> { "Elektronik", "Kitap", "Giyim" };
+    }
+}
+
+
+
+
